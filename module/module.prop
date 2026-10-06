@@ -1,0 +1,6 @@
+id=hide_everything
+name=Hide Everything
+version=v0.3
+versionCode=3
+author=RMX5080
+description=清除式隐藏：删掉 NoActive/MT2 等残留（而非隐藏，避免"可访问但无记录"的矛盾）+ 按应用隐藏应用列表 + WebUI + 开机失败自动禁用

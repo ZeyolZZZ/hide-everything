@@ -1,0 +1,67 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hide Everything</title>
+<style>
+ body{font-family:system-ui;margin:0;padding:16px;background:#faf8ff;color:#1b1b1f}
+ h1{font-size:20px;margin:0 0 4px}
+ .sub{color:#666;font-size:13px;margin-bottom:16px}
+ .card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px #0001}
+ input,button{font:inherit;padding:10px;border-radius:10px;border:1px solid #ccc;width:100%;box-sizing:border-box}
+ button{background:#6750a4;color:#fff;border:0;margin-top:8px}
+ .app{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee}
+ .app:last-child{border-bottom:0}
+ .tag{font-size:12px;color:#6750a4}
+ code{word-break:break-all;font-size:12px;color:#444}
+</style></head><body>
+<h1>Hide Everything</h1>
+<div class="sub">针对应用隐藏应用列表（目标应用仅见：系统基础组件 + 自身）</div>
+
+<div class="card">
+  <b>添加目标应用</b>
+  <input id="pkg" placeholder="com.example.app 或 allow:com.xxx（白名单）">
+  <button onclick="add()">添加</button>
+</div>
+
+<div class="card">
+  <b>已配置</b>
+  <div id="list" class="sub">加载中…</div>
+</div>
+
+<div class="card">
+  <b>状态</b>
+  <div id="stat" class="sub">—</div>
+</div>
+
+<script>
+const CFG='/data/adb/hide_everything/config.json';
+function sh(cmd,cb){
+  if(window.ksu&&ksu.exec){ksu.exec(cmd,cb);}
+  else if(window.KernelSU&&KernelSU.exec){/* old */KernelSU.exec(cmd,'{}',cb);}
+  else{cb(-1,'','此 WebUI 未在 KernelSU 内打开');}
+}
+function load(){
+  sh(`cat ${CFG} 2>/dev/null || echo '[]'`,(c,o)=>{
+    let arr=[]; try{arr=JSON.parse(o||'[]')}catch(e){arr=(o||'').split(/\s+/).filter(Boolean)}
+    document.getElementById('list').innerHTML = arr.length? arr.map(p=>
+      `<div class="app"><span>${p}</span><span class="tag">已启用</span></div>`).join('') : '（空）';
+  });
+  sh('zcat /proc/config.gz 2>/dev/null | grep -c "^CONFIG_KSU_SUSFS_SUS_PATH=y"; ls /data/adb/modules/hide_everything/disable 2>/dev/null && echo DISABLED',(c,o)=>{
+    document.getElementById('stat').innerHTML =
+      `SUS_PATH 支持: ${/1/.test(o)?'✅':'❌'}<br>模块状态: ${/DISABLED/.test(o)?'⛔ 已自动禁用':'✅ 正常'}<br><code>${CFG}</code>`;
+  });
+}
+function add(){
+  const v=document.getElementById('pkg').value.trim(); if(!v)return;
+  sh(`cat ${CFG} 2>/dev/null`,(c,o)=>{
+    let arr=[]; try{arr=JSON.parse(o||'[]')}catch(e){arr=[]}
+    if(!arr.includes(v))arr.push(v);
+    const json=JSON.stringify(arr);
+    const b64=btoa(json);
+    sh(`mkdir -p /data/adb/hide_everything && echo '${b64}' | base64 -d > ${CFG} && echo ok`,(c2,o2)=>{
+      if(window.ksu&&ksu.toast)ksu.toast('已添加: '+v);
+      document.getElementById('pkg').value=''; load();
+    });
+  });
+}
+load();
+</script></body></html>

@@ -1,0 +1,6 @@
+# 每行一个要【删除】的路径；只有存在 cleanup.enabled 时才执行
+/data/system/NoActive
+/sdcard/MT2
+/storage/emulated/0/MT2
+/data/media/0/MT2
+/sdcard/Android/data/bin.mt.plus
