@@ -30,9 +30,11 @@ public final class Config {
             int n = in.read(buf);
             if (n > 0) {
                 String text = new String(buf, 0, n, StandardCharsets.UTF_8);
-                // 支持 JSON 数组或纯文本：抓出所有 xxx.yyy 形式的包名
-                for (String line : text.split("[^A-Za-z0-9_.]+")) {
-                    if (line.indexOf('.') > 0 && line.length() > 3) s.add(line);
+                // 支持 JSON 数组或纯文本。必须保留 "allow:" 前缀，否则白名单会失效。
+                for (String tok : text.split("[^A-Za-z0-9_.:]+")) {
+                    if (tok.isEmpty()) continue;
+                    String body = tok.startsWith("allow:") ? tok.substring(6) : tok;
+                    if (body.indexOf('.') > 0 && body.length() > 3) s.add(tok);
                 }
             }
         } catch (Throwable ignored) { }
