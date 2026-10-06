@@ -46,6 +46,8 @@ public final class Rules {
                 BYPASS.set(Boolean.FALSE);
             }
         }
+        // 探测失败（空集合）不缓存，避免把"无法判定"固化成一劳永逸的全隐藏
+        if (s.isEmpty()) return Collections.emptySet();
         launcherPkgs = Collections.unmodifiableSet(s);
         return launcherPkgs;
     }
@@ -61,7 +63,9 @@ public final class Rules {
         if (pkg.equals(self)) return true;                                  // 自身
         if (Config.targets().contains("allow:" + pkg)) return true;          // 显式白名单
         if (bypassing()) return true;                                        // 我们自己的探测查询
-        return !launchers(ctx).contains(pkg);                                // 无启动图标者视为系统基础组件
+        Set<String> l = launchers(ctx);
+        if (l.isEmpty()) return false;                                       // 无法判定 → fail closed
+        return !l.contains(pkg);                                             // 无启动图标者视为系统基础组件
     }
 
     public static boolean allowInfo(ApplicationInfo ai, String self, Context ctx) {
@@ -70,7 +74,9 @@ public final class Rules {
         if (Config.targets().contains("allow:" + ai.packageName)) return true;
         if (bypassing()) return true;
         if (!isSystem(ai)) return false;                                     // 非系统应用一律隐藏
-        return !launchers(ctx).contains(ai.packageName);                     // 系统且无图标 = 基础组件
+        Set<String> l = launchers(ctx);
+        if (l.isEmpty()) return false;                                       // fail closed
+        return !l.contains(ai.packageName);                                  // 系统且无图标 = 基础组件
     }
 
     public static boolean allowPkgInfo(PackageInfo pi, String self, Context ctx) {

@@ -10,6 +10,8 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.content.Context;
+import de.robv.android.xposed.AndroidAppHelper;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
@@ -69,16 +71,21 @@ public class Hook implements IXposedHookLoadPackage {
 
     /* ---------------- 通用工具 ---------------- */
 
+    static Context ctx() {
+        try { return AndroidAppHelper.currentApplication(); } catch (Throwable t) { return null; }
+    }
+
     private boolean allowed(Object obj, String self) {
-        if (obj instanceof PackageInfo) return Rules.allowPkgInfo((PackageInfo) obj, self);
-        if (obj instanceof ApplicationInfo) return Rules.allowInfo((ApplicationInfo) obj, self);
+        Context c = ctx();
+        if (obj instanceof PackageInfo) return Rules.allowPkgInfo((PackageInfo) obj, self, c);
+        if (obj instanceof ApplicationInfo) return Rules.allowInfo((ApplicationInfo) obj, self, c);
         if (obj instanceof ResolveInfo) {
             ResolveInfo ri = (ResolveInfo) obj;
             String pkg = ri.activityInfo != null ? ri.activityInfo.packageName
                     : ri.serviceInfo != null ? ri.serviceInfo.packageName
                     : ri.providerInfo != null ? ri.providerInfo.packageName
                     : ri.filter != null ? null : null;
-            return pkg == null || Rules.allow(pkg, self, true);
+            return pkg == null || Rules.allow(pkg, self, ctx());
         }
         return true;
     }
@@ -124,7 +131,7 @@ public class Hook implements IXposedHookLoadPackage {
                 XposedBridge.hookMethod(m, new XC_MethodHook() {
                     @Override protected void beforeHookedMethod(MethodHookParam p) throws Throwable {
                         String pkg = (String) p.args[0];
-                        if (pkg == null || Rules.allow(pkg, self, false)) return;
+                        if (pkg == null || Rules.allow(pkg, self, ctx())) return;
                         throw new PackageManager.NameNotFoundException(pkg);
                     }
                 });
@@ -140,7 +147,7 @@ public class Hook implements IXposedHookLoadPackage {
                         Object r = p.getResult();
                         if (!(r instanceof String[])) return;
                         List<String> out = new ArrayList<>();
-                        for (String s : (String[]) r) if (Rules.allow(s, self, false)) out.add(s);
+                        for (String s : (String[]) r) if (Rules.allow(s, self, ctx())) out.add(s);
                         p.setResult(out.toArray(new String[0]));
                     }
                 });
