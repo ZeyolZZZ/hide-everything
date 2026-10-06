@@ -87,6 +87,7 @@ public class Hook implements IXposedHookLoadPackage {
         try {
             XposedHelpers.findAndHookMethod(cls, lp.classLoader, method, new XC_MethodHook() {
                 @Override protected void afterHookedMethod(MethodHookParam p) {
+                    if (Rules.bypassing()) return;
                     Object r = p.getResult();
                     if (!(r instanceof List)) return;
                     List<?> in = (List<?>) r;
@@ -102,6 +103,7 @@ public class Hook implements IXposedHookLoadPackage {
         try {
             XposedHelpers.findAndHookMethod(cls, lp.classLoader, method, new XC_MethodHook() {
                 @Override protected void afterHookedMethod(MethodHookParam p) {
+                    if (Rules.bypassing()) return;
                     Object r = p.getResult();
                     if (!(r instanceof List)) return;
                     List<?> in = (List<?>) r;
