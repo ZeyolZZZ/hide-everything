@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.content.Context;
-import de.robv.android.xposed.AndroidAppHelper;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
@@ -72,7 +71,17 @@ public class Hook implements IXposedHookLoadPackage {
     /* ---------------- 通用工具 ---------------- */
 
     static Context ctx() {
-        try { return AndroidAppHelper.currentApplication(); } catch (Throwable t) { return null; }
+        // AndroidAppHelper 在不同 API 版本里包名不一致（android.app / de.robv.android.xposed），
+        // 用反射调用，避免编译期依赖。
+        try {
+            Class<?> c = Class.forName("android.app.AndroidAppHelper");
+            return (Context) c.getMethod("currentApplication").invoke(null);
+        } catch (Throwable t) {
+            try {
+                Class<?> c = Class.forName("de.robv.android.xposed.AndroidAppHelper");
+                return (Context) c.getMethod("currentApplication").invoke(null);
+            } catch (Throwable t2) { return null; }
+        }
     }
 
     private boolean allowed(Object obj, String self) {
